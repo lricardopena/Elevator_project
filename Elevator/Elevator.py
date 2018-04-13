@@ -1,19 +1,26 @@
-import threading
+from threading import Thread
 import time
 
 
-class Elevator:
+class Elevator(Thread):
     __direction = "S"  # posible states are S = STILL, D = DOWN, U = UP
     __actual_floor = 1
     __array_floors = []
     __idElevator = 0
+    __stillRuning = True
+    __seconds_pause = 1
 
     def __init__(self, id):
+        ''' Constructor. '''
+        Thread.__init__(self)
+
         self.__idElevator = id
         self.__direction = "S"  # posible states are S = STILL, D = DOWN, U = UP
         self.__actual_floor = 1
         self.__array_floors = []
         self.__to_floor = 1
+
+        self.__stillRuning = True
 
     def distance_request(self, direction, floor):
         '''
@@ -22,7 +29,7 @@ class Elevator:
         :return: the distance between the elevator steps an a request
         '''
         if (self.__direction == "S" or self.__direction == direction):
-            return self.__idElevator, abs(floor - self.__actual_floor)
+            return abs(floor - self.__actual_floor)
         if (self.__direction == "U"):
             max_floor = max(self.__array_floors)
             # Distance from actual floor to the max floor      distance from max floor to floor from request
@@ -40,22 +47,32 @@ class Elevator:
         :param floor: The number of floor of the request
         :return: insert the request in the queue
         '''
+
         distante_to_request = self.distance_request(direction, floor)
-        for i in range(self.__array_floors):
+        for i in range(len(self.__array_floors)):
             distance_request_i = self.distance_request(self.__direction, self.__array_floors[i])
             if distance_request_i > distante_to_request:
-                break
+                left_array = self.__array_floors[:i]
+                right_array = self.__array_floors[i:]
+                left_array.append(floor)
+                self.__array_floors = left_array + right_array
+                return
 
-        if i == 0:
-            self.__to_floor = floor
-            self.__array_floors = [floor] + self.__array_floors
-        else:
-            left_array = self.__array_floors[:i]
-            right_array = self.__array_floors[i:]
-            left_array.append(floor)
-            self.__array_floors = left_array + right_array
+        self.__array_floors.append(floor)
+
 
     def assing_request(self, direction, floor):
+        self.__insert_order_request(direction, floor)
+
+
+    def __get_direction_of_floor(self, floor):
+        if self.__actual_floor > floor: #If the floor is down actual floor we need to down the elevator
+            return "D"
+
+        return "U" #If the floor is up from the actual floor we need to go down
+
+    def push_button_floor(self, floor):
+        direction = self.__get_direction_of_floor(floor)
         self.__insert_order_request(direction, floor)
 
     def __get_direction(self):
@@ -100,14 +117,20 @@ class Elevator:
         else:
             self.__to_floor = self.__array_floors[0]
             del self.__array_floors[0]
+            self.__direction = self.__get_direction_of_floor(self.__to_floor)
 
 
-    def start_working_elevator(self):
+    def stop_thread(self):
+        self.__stillRuning = False
+
+    def run(self):
         '''
         This function start the thread of the elevator
         :return:
         '''
-        while True:
-            print "Elevator # " + str(self.__idElevator) + " actual floor: " + str(self.__actual_floor) + " going to floor: " + str(self.__to_floor) + " my direction is: " + self.__get_direction()
+        while self.__stillRuning:
             self.__move_elevator()
-            time.sleep(1)
+            print "Elevator # " + str(self.__idElevator) + " actual floor: " + str(
+                self.__actual_floor) + " going to floor: " + str(
+                self.__to_floor) + " my direction is: " + self.__get_direction() + " Queue: " + str(self.__array_floors)
+            time.sleep(self.__seconds_pause)

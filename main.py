@@ -1,9 +1,27 @@
-import threading
+import time
+from Elevator import Elevator
 
 
-el = Ele
+el = Elevator.Elevator(1)
 
-threads = list()
-t = threading.Thread(target=worker)
-threads.append(t)
-t.start()
+el.start()
+
+
+
+
+
+print(el.distance_request("U", 3))
+
+el.push_button_floor(3)
+
+el.push_button_floor(4)
+
+el.push_button_floor(6)
+
+
+
+el.assing_request("D", 10)
+
+time.sleep(3)
+
+el.assing_request("D", 2)
